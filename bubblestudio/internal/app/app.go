@@ -21,9 +21,9 @@ const (
 	modeForm
 )
 
-// appTitle and footerHints are the fixed chrome strings used in both
-// bodyHeight (for size measurement) and View (for rendering), eliminating
-// the previous heuristic that hardcoded a 2-line chrome offset.
+// appTitle and footerHints are the fixed chrome strings rendered in the
+// header and footer.  They are used in both bodyHeight() for size measurement
+// and View() for rendering.
 const (
 	appTitle    = "bubblestudio"
 	footerHints = "q quit • ? help • tab form demo • esc back"

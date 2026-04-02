@@ -59,7 +59,7 @@ func TestUpdate_escReturnsToList(t *testing.T) {
 	}
 }
 
-func TestBodyHeight_measuredNotHardcoded(t *testing.T) {
+func TestView_doesNotExceedTerminalHeight(t *testing.T) {
 	// With a 24-line terminal, bodyHeight must leave room for chrome without
 	// hardcoding exactly 2.  We verify it is positive and less than total height.
 	m := simulateResize(app.New(), 80, 24)
