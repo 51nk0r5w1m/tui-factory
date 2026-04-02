@@ -60,13 +60,25 @@ func (m Model) bodyHeight() int {
 	return h
 }
 
+// listInnerSize returns the width and height available to the list after
+// subtracting the theme.Body padding so the list fits precisely inside the
+// body style box.
+func (m Model) listInnerSize() (w, h int) {
+	hp := m.theme.Body.GetHorizontalPadding()
+	vp := m.theme.Body.GetVerticalPadding()
+	w = max(0, m.width-hp)
+	h = max(0, m.bodyHeight()-vp)
+	return w, h
+}
+
 // Update handles incoming messages and updates state.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.list.SetSize(msg.Width, m.bodyHeight())
+		w, h := m.listInnerSize()
+		m.list.SetSize(w, h)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -85,6 +97,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = modeList
 			return m, nil
 		}
+
+		// Don't forward key events to body components while the help overlay is
+		// visible — doing so would silently mutate hidden list/form state.
+		if m.showHelp {
+			return m, nil
+		}
 	}
 
 	// Forward to the active body component.
@@ -99,18 +117,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View renders the header / body / footer layout.
+// theme.Body is applied uniformly to all three body states so styling is
+// consistent whether the list, form, or help overlay is shown.
 func (m Model) View() string {
 	header := m.theme.Header.Width(m.width).Render("bubblestudio")
 
+	bodyStyle := m.theme.Body.Width(m.width).Height(m.bodyHeight())
 	var body string
 	switch {
 	case m.showHelp:
-		body = m.theme.Body.Width(m.width).Height(m.bodyHeight()).Render(m.help.View(m.keys))
+		body = bodyStyle.Render(m.help.View(m.keys))
 	case m.mode == modeForm:
-		body = m.theme.Body.Width(m.width).Height(m.bodyHeight()).Render(m.form.View())
+		body = bodyStyle.Render(m.form.View())
 	default:
-		// List manages its own sizing; no outer style wrapper needed.
-		body = m.list.View()
+		// The list is pre-sized to fit within the body padding (see listInnerSize),
+		// so theme.Body wraps it without clipping or overflowing.
+		body = bodyStyle.Render(m.list.View())
 	}
 
 	footer := m.theme.Footer.Width(m.width).Render("q quit • ? help • tab form demo • esc back")
