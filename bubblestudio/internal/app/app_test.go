@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/tuistudio/bubblestudio/internal/app"
 )
 
@@ -64,15 +65,10 @@ func TestView_doesNotExceedTerminalHeight(t *testing.T) {
 	// hardcoding exactly 2.  We verify it is positive and less than total height.
 	m := simulateResize(app.New(), 80, 24)
 	view := m.View()
-	// Count rendered lines; they must be <= 24.
-	lines := 0
-	for _, c := range view {
-		if c == '\n' {
-			lines++
-		}
-	}
-	// Rendered output should not exceed terminal height.
-	if lines >= 24 {
-		t.Errorf("rendered output has %d newlines, expected < 24", lines)
+	// Use lipgloss.Height for an accurate rendered-line count (newlines + 1,
+	// with correct handling of a trailing newline).
+	h := lipgloss.Height(view)
+	if h > 24 {
+		t.Errorf("rendered output is %d lines tall, expected <= 24", h)
 	}
 }

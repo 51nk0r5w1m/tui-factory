@@ -30,9 +30,15 @@ func TestNew_focusesFirstField(t *testing.T) {
 	f1 := form.NewField("A", "ph", nil)
 	f2 := form.NewField("B", "ph", nil)
 	m := form.New(f1, f2)
-	// Both fields should exist; the form itself should be valid (no validation).
-	if !m.Valid() {
-		t.Error("form with nil validators should be valid")
+	// Type a character; it should land in the first (focused) field, not the second.
+	charMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("x")}
+	m, _ = m.Update(charMsg)
+	vals := m.Values()
+	if got := vals["A"]; got != "x" {
+		t.Errorf("expected first field to receive input; got %q", got)
+	}
+	if got := vals["B"]; got != "" {
+		t.Errorf("expected second field to remain empty; got %q", got)
 	}
 }
 
@@ -58,11 +64,21 @@ func TestUpdate_tabNavigates(t *testing.T) {
 	f2 := form.NewField("B", "ph", nil)
 	m := form.New(f1, f2)
 
-	// Pressing Tab should move focus to the second field (wraps via Update).
+	// Pressing Tab should move focus to the second field.
 	tabMsg := tea.KeyMsg{Type: tea.KeyTab}
 	m, _ = m.Update(tabMsg)
-	// The model should still be valid and not crash.
-	_ = m.View()
+
+	// Typing a character after Tab should affect the second field, not the first.
+	charMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("x")}
+	m, _ = m.Update(charMsg)
+
+	vals := m.Values()
+	if got := vals["B"]; got != "x" {
+		t.Errorf("expected second field to receive input after Tab; got %q", got)
+	}
+	if got := vals["A"]; got != "" {
+		t.Errorf("expected first field to remain unchanged after Tab; got %q", got)
+	}
 }
 
 func TestValidateFn_errorType(t *testing.T) {
